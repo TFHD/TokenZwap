@@ -1,0 +1,1 @@
+npm i && ln -s $(pwd)/node_modules ../deployment/node_modules
