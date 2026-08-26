@@ -14,7 +14,10 @@ export const AMM_ABI = [
 	'function listings(uint256) view returns (address seller, address nftContract, uint256 tokenId, address paymentToken, uint256 price, bool active)',
 	'function listNFT(address nftContract, uint256 tokenId, address paymentToken, uint256 price) returns (uint256)',
 	'function buyNFT(uint256 listingId)',
-	'function cancelListing(uint256 listingId)'
+	'function cancelListing(uint256 listingId)',
+	'event PriceUpdated(uint256 indexed timestamp, uint256 reserveA, uint256 reserveB, uint256 priceAinB)',
+	'event Swapped(address indexed user, address tokenIn, uint256 amountIn, address tokenOut, uint256 amountOut)',
+	'event LiquidityAdded(address indexed provider, uint256 amountA, uint256 amountB, uint256 lpMinted)'
 ];
 
 export const ERC20_ABI = [

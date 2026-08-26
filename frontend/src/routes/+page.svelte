@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { isAddress } from 'ethers';
-	import NftMedia from '$lib/NftMedia.svelte';
+	import NftMedia from '$lib/components/NftMedia.svelte';
+	import PriceChart from '$lib/components/PriceChart.svelte';
+	import ToastStack from '$lib/components/ToastStack.svelte';
 	import {
 		AMM_ADDRESS,
 		addLiquidity,
@@ -8,13 +11,13 @@
 		cancelListing,
 		connect,
 		disconnect,
-		explorerTx,
 		formatAmount,
 		isConfigured,
 		isConnected,
 		isSepolia,
 		LP_DECIMALS,
 		listNFT,
+		loadPriceHistory,
 		pool,
 		quoteOut,
 		removeLiquidity,
@@ -22,8 +25,11 @@
 		shortenAddress,
 		lpSharePercent,
 		priceImpact,
+		refreshPool,
 		spotPriceAPerB,
 		spotPriceBPerA,
+		startPriceListener,
+		stopPriceListener,
 		suggestedCounterAmount,
 		tryParseAmount,
 		swap,
@@ -77,6 +83,13 @@
 		{ id: 'pool', label: 'Pool' },
 		{ id: 'nft', label: 'NFT' }
 	];
+
+	$effect(() => {
+		if (!browser || !isConfigured()) return;
+		void refreshPool().then(() => loadPriceHistory());
+		startPriceListener();
+		return () => stopPriceListener();
+	});
 
 	$effect(() => {
 		const value = amountIn;
@@ -169,6 +182,12 @@
 				</p>
 			</div>
 		{:else}
+			<section class="panel overflow-hidden p-5 md:p-6">
+				<div class="h-[300px] md:h-[340px]">
+					<PriceChart symbolA={pool.symbolA} symbolB={pool.symbolB} />
+				</div>
+			</section>
+
 			<section class="panel overflow-hidden">
 				<nav class="bg-safe-surface/80 border-safe-line grid grid-cols-4 gap-1 border-b p-2">
 					{#each tabs as item}
@@ -452,20 +471,7 @@
 				</div>
 			</section>
 		{/if}
-
-		{#if wallet.error}
-			<p class="rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm text-red-200">
-				{wallet.error}
-			</p>
-		{/if}
-
-		{#if wallet.lastTx}
-			<p class="text-safe-mute text-sm">
-				{wallet.lastMessage ?? 'Transaction confirmed.'}
-				<a class="text-safe-green" href={explorerTx(wallet.lastTx)} target="_blank" rel="noreferrer">
-					Etherscan
-				</a>
-			</p>
-		{/if}
 	</main>
+
+	<ToastStack />
 </div>

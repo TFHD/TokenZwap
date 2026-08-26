@@ -1,10 +1,11 @@
 import { Contract, MaxUint256, type ContractRunner, type TransactionResponse } from 'ethers';
 import { AMM_ABI, ERC20_ABI, ERC721_ABI } from './abi';
-import { AMM_ADDRESS, isConfigured } from './chain';
+import { AMM_ADDRESS, explorerTx, isConfigured } from './chain';
 import { browserProvider, readProvider } from './ethereum';
 import { parseError } from './errors';
-import { parseAmount, sameAddress, tryParseAmount } from './format';
+import { sameAddress, tryParseAmount } from './format';
 import { applyPool, isSepolia, pool, wallet } from './state.svelte';
+import { pushToast } from './toast.svelte';
 import { INITIAL_POOL, type Listing, type Pool } from './types';
 
 function ammAt(runner: ContractRunner) {
@@ -59,11 +60,16 @@ export async function runTx(label: string, action: () => Promise<TransactionResp
 		if (tx) {
 			wallet.lastTx = tx.hash;
 			await tx.wait();
+			pushToast('success', label, undefined, explorerTx(tx.hash));
+		} else {
+			pushToast('success', label);
 		}
 		wallet.lastMessage = label;
 		await refreshPool();
 	} catch (error) {
-		wallet.error = parseError(error);
+		const message = parseError(error);
+		wallet.error = message;
+		pushToast('error', 'Transaction failed', message);
 	} finally {
 		wallet.busy = false;
 	}

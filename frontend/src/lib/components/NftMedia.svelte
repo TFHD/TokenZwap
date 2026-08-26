@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { ipfsCandidates, loadNftMedia } from './nft-media';
+	import { ipfsCandidates, loadNftMedia } from '../nft-media';
 
 	let { nftContract, tokenId, alt = 'NFT' }: { nftContract: string; tokenId: string; alt?: string } =
 		$props();

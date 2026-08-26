@@ -8,6 +8,24 @@ export type Listing = {
 	active: boolean;
 };
 
+export type PricePoint = {
+	timestamp: number;
+	price: number;
+	reserveA: string;
+	reserveB: string;
+	txHash?: string;
+};
+
+export type ToastKind = 'success' | 'error' | 'info' | 'price';
+
+export type Toast = {
+	id: number;
+	kind: ToastKind;
+	title: string;
+	message?: string;
+	href?: string;
+};
+
 export type Wallet = {
 	account: string | null;
 	chainId: number | null;

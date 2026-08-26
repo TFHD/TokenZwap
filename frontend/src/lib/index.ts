@@ -11,7 +11,7 @@ export {
 	withdrawPreview
 } from './pool-math';
 export { isConnected, isSepolia, pool, wallet } from './state.svelte';
-export { quoteOut } from './amm.svelte';
+export { quoteOut, refreshPool } from './amm.svelte';
 export {
 	addLiquidity,
 	buyNFT,
@@ -21,3 +21,11 @@ export {
 	swap
 } from './actions.svelte';
 export { connect, disconnect, switchToSepolia } from './wallet.svelte';
+export {
+	formatChartPrice,
+	loadPriceHistory,
+	priceHistory,
+	startPriceListener,
+	stopPriceListener
+} from './price-history.svelte';
+export { dismissToast, pushToast, toasts } from './toast.svelte';
