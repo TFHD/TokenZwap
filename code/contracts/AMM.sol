@@ -58,6 +58,7 @@ contract AMSSabartho is ERC20, IERC721Receiver, ReentrancyGuard, Ownable {
     event NFTListed(uint256 indexed listingId, address indexed seller, address nftContract, uint256 tokenId, address paymentToken, uint256 price);
     event NFTPurchased(uint256 indexed listingId, address indexed buyer, address indexed seller, uint256 price);
     event NFTListingCancelled(uint256 indexed listingId, address indexed seller);
+    event PriceUpdated(uint256 indexed timestamp, uint256 reserveA, uint256 reserveB, uint256 priceAinB);
 
     // ============================================================
     //                       CONSTRUCTOR
@@ -124,6 +125,7 @@ contract AMSSabartho is ERC20, IERC721Receiver, ReentrancyGuard, Ownable {
         _mint(msg.sender, lpMinted);
 
         emit LiquidityAdded(msg.sender, amountA, amountB, lpMinted);
+        emit PriceUpdated(block.timestamp, reserveA, reserveB, (reserveB * 1e18) / reserveA);
     }
 
     /**
@@ -203,6 +205,7 @@ contract AMSSabartho is ERC20, IERC721Receiver, ReentrancyGuard, Ownable {
         tokenOut.safeTransfer(msg.sender, amountOut);
 
         emit Swapped(msg.sender, tokenIn, amountIn, address(tokenOut), amountOut);
+        emit PriceUpdated(block.timestamp, reserveA, reserveB, (reserveB * 1e18) / reserveA);
     }
 
     // ============================================================
