@@ -6,7 +6,9 @@
   "scripts": {
     "deploy": "hardhat run ../deployment/AMMdeploy.ts --network sepolia",
     "compile": "hardhat compile",
-    "verify": "hardhat verify --network sepolia --contract contracts/TokenBSBT.sol:SabarthoTokenB",
+    "verifyB": "hardhat verify --network sepolia --contract contracts/TokenBSBT.sol:SabarthoTokenB",
+    "verifyA": "hardhat verify --network sepolia --contract contracts/TokenASBT.sol:SabarthoTokenA",
+    "verifyAMM": "hardhat verify --network sepolia --contract contracts/AMM.sol:AMSSabartho",
     "transfer-ownership": "hardhat run bonus/transfer-ownership.ts --network sepolia"
   },
   "keywords": [],
