@@ -4,7 +4,7 @@ DApp d’échange décentralisé sur **Ethereum Sepolia** : un AMM à produit co
 
 ## Fonctionnalités
 
-- **Swap** SBTA ↔ SBTB, quote on-chain, frais 2 %, impact prix affiché
+- **Swap** SBTA ↔ SBTB, quote on-chain, frais 2 %, impact prix, **slippage** (`minAmountOut`) et **deadline** (20 min)
 - **Liquidité** : dépôt des deux tokens, mint d’AMMLP ; retrait proportionnel
 - **Pool** : réserves, prix spot, supply LP, part de l’utilisateur
 - **NFT** : listing / achat / annulation, paiement en SBTA ou SBTB (hors courbe AMM)
@@ -26,9 +26,9 @@ DApp d’échange décentralisé sur **Ethereum Sepolia** : un AMM à produit co
 
 | Contrat          | Symbole | Adresse                                                                                                                         |
 | ---------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `SabarthoTokenA` | SBTA    | `[0xC736b5BC9C484f275E8B0E3B4e4eb174Ed3D94EB](https://sepolia.etherscan.io/address/0x5b0dfDC1Bc91C9057E90620399A6D49FC117FD5A)` |
-| `SabarthoTokenB` | SBTB    | `[0xC8e5d9A680d0edee5e42Ef8c10F3A3aBC8CD5C46](https://sepolia.etherscan.io/address/0xBD06a1aa6eD26A7B8d5a13F2B208f813A802D184)` |
-| `AMSSabartho`    | AMMLP   | `[0x2C525A01fC50864B110cb23cF600DEAEB9Be826a](https://sepolia.etherscan.io/address/0x3D4DaA14Bfcd685da0578B181cea1A24a6E33FC7)` |
+| `SabarthoTokenA` | SBTA    | `[0xDe8AA58Ba90119a11bF5d571Afef6faEdcC98F38](https://sepolia.etherscan.io/address/0x5b0dfDC1Bc91C9057E90620399A6D49FC117FD5A)` |
+| `SabarthoTokenB` | SBTB    | `[0xBD06a1aa6eD26A7B8d5a13F2B208f813A802D184](https://sepolia.etherscan.io/address/0xBD06a1aa6eD26A7B8d5a13F2B208f813A802D184)` |
+| `AMSSabartho`    | AMMLP   | `[0x5be75E6e0a1ab73F3E02355C1Cd2BB91D0cAc368](https://sepolia.etherscan.io/address/0x3D4DaA14Bfcd685da0578B181cea1A24a6E33FC7)` |
 
 
 
@@ -81,7 +81,7 @@ npm install
 `frontend/.env` :
 
 ```env
-PUBLIC_AMM_ADDRESS=0x2C525A01fC50864B110cb23cF600DEAEB9Be826a
+PUBLIC_AMM_ADDRESS=0x5be75E6e0a1ab73F3E02355C1Cd2BB91D0cAc368
 ```
 
 ```bash
