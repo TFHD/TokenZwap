@@ -72,9 +72,9 @@ The script prints the three addresses. Current deployment:
 
 | Contract | Address                                      |
 | -------- | -------------------------------------------- |
-| Token A  | `0xC736b5BC9C484f275E8B0E3B4e4eb174Ed3D94EB` |
-| Token B  | `0xC8e5d9A680d0edee5e42Ef8c10F3A3aBC8CD5C46` |
-| AMM      | `0x2C525A01fC50864B110cb23cF600DEAEB9Be826a` |
+| Token A  | `0xDe8AA58Ba90119a11bF5d571Afef6faEdcC98F38` |
+| Token B  | `0xBD06a1aa6eD26A7B8d5a13F2B208f813A802D184` |
+| AMM      | `0x5be75E6e0a1ab73F3E02355C1Cd2BB91D0cAc368` |
 
 
 To reuse existing tokens: set `DEPLOY_TOKENS` to `false` and provide `TOKEN_A_ADDRESS` / `TOKEN_B_ADDRESS`. The current script calls `tokenA.getAddress()` without `await` on a fresh deploy; keep `DEPLOY_TOKENS = true` for the tested path, or fix the script before wiring existing tokens.
@@ -87,7 +87,7 @@ Token B example (existing npm script target):
 cd code
 npx hardhat verify --network sepolia \
   --contract contracts/TokenBSBT.sol:SabarthoTokenB \
-  0xC8e5d9A680d0edee5e42Ef8c10F3A3aBC8CD5C46 \
+  0xBD06a1aa6eD26A7B8d5a13F2B208f813A802D184 \
   1000000
 ```
 
@@ -98,9 +98,9 @@ AMM (constructor: address A, address B, fee):
 ```bash
 npx hardhat verify --network sepolia \
   --contract contracts/AMM.sol:AMSSabartho \
-  0x2C525A01fC50864B110cb23cF600DEAEB9Be826a \
-  0xC736b5BC9C484f275E8B0E3B4e4eb174Ed3D94EB \
-  0xC8e5d9A680d0edee5e42Ef8c10F3A3aBC8CD5C46 \
+  0x5be75E6e0a1ab73F3E02355C1Cd2BB91D0cAc368 \
+  0xDe8AA58Ba90119a11bF5d571Afef6faEdcC98F38 \
+  0xBD06a1aa6eD26A7B8d5a13F2B208f813A802D184 \
   2
 ```
 
@@ -116,7 +116,7 @@ npm install
 `frontend/.env` (already pointed at the Sepolia deploy):
 
 ```env
-PUBLIC_AMM_ADDRESS=0x2C525A01fC50864B110cb23cF600DEAEB9Be826a
+PUBLIC_AMM_ADDRESS=0x5be75E6e0a1ab73F3E02355C1Cd2BB91D0cAc368
 ```
 
 A `.env.example` is provided. Then:
@@ -129,9 +129,9 @@ Open the Vite URL (often `http://localhost:5173`). Connect MetaMask on **Sepolia
 
 Import tokens in MetaMask (custom token):
 
-- SBTA: `0xC736b5BC9C484f275E8B0E3B4e4eb174Ed3D94EB`
-- SBTB: `0xC8e5d9A680d0edee5e42Ef8c10F3A3aBC8CD5C46`
-- AMMLP: `0x2C525A01fC50864B110cb23cF600DEAEB9Be826a`
+- SBTA: `0xDe8AA58Ba90119a11bF5d571Afef6faEdcC98F38`
+- SBTB: `0xBD06a1aa6eD26A7B8d5a13F2B208f813A802D184`
+- AMMLP: `0x5be75E6e0a1ab73F3E02355C1Cd2BB91D0cAc368`
 
 The deployer holds the initial supply. For a second test wallet: transfer SBTA/SBTB, or mint (`mint` is owner-only).
 
@@ -167,9 +167,9 @@ There is no automated Hardhat/Mocha suite in the repo. Validate on Sepolia as fo
 ### D. Swap
 
 1. Enter an amount: output comes from `getAmountOut` (not a local formula).
-2. Check fee (2%) and price impact (green / amber / red).
+2. Check fee (2%), price impact (green / amber / red), and **max slippage** (0.5% / 1% / 3%). **Min received** is `quoted × (1 − slippage)`.
 3. Flip the pair (↕) and quote again.
-4. Confirm: `approve` the input token if allowance is low, then `swap`.
+4. Confirm: `approve` the input token if allowance is low, then `swap(..., minAmountOut, deadline)` (`deadline` = now + 20 min, shown as **Expires**).
 5. **Etherscan** link after confirmation. Reserves and spot price should move.
 
 
@@ -193,6 +193,8 @@ Need: a Sepolia ERC-721 you own, and enough SBTA/SBTB to buy.
 | Swap amount 0                   | Revert `Amount must be > 0`             |
 | Invalid input token             | Revert `Invalid token`                  |
 | Swap larger than output reserve | Revert `Insufficient liquidity`         |
+| Output below min (tight slippage) | Revert `slippage too high`            |
+| Deadline in the past              | Revert `Deadline expired`             |
 | Remove more LP than balance     | Revert `Not enough LP tokens`           |
 | List with price 0               | Revert `Price must be > 0`              |
 | List an NFT you do not own      | Revert / DApp “You do not own this NFT” |

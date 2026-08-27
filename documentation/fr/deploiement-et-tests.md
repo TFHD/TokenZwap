@@ -72,9 +72,9 @@ Le script affiche les trois adresses. Déploiement actuel :
 
 | Contrat | Adresse                                      |
 | ------- | -------------------------------------------- |
-| Token A | `0xC736b5BC9C484f275E8B0E3B4e4eb174Ed3D94EB` |
-| Token B | `0xC8e5d9A680d0edee5e42Ef8c10F3A3aBC8CD5C46` |
-| AMM     | `0x2C525A01fC50864B110cb23cF600DEAEB9Be826a` |
+| Token A | `0xDe8AA58Ba90119a11bF5d571Afef6faEdcC98F38` |
+| Token B | `0xBD06a1aa6eD26A7B8d5a13F2B208f813A802D184` |
+| AMM     | `0x5be75E6e0a1ab73F3E02355C1Cd2BB91D0cAc368` |
 
 
 Pour réutiliser des tokens déjà déployés : passer `DEPLOY_TOKENS` à `false` et renseigner `TOKEN_A_ADDRESS` / `TOKEN_B_ADDRESS` dans l’environnement. Le script actuel appelle `tokenA.getAddress()` sans `await` si les tokens viennent d’être déployés : garder `DEPLOY_TOKENS = true` pour le chemin testé, ou corriger le script avant de relier des tokens existants.
@@ -87,7 +87,7 @@ Exemple Token B (script npm existant) :
 cd code
 npx hardhat verify --network sepolia \
   --contract contracts/TokenBSBT.sol:SabarthoTokenB \
-  0xC8e5d9A680d0edee5e42Ef8c10F3A3aBC8CD5C46 \
+  0xBD06a1aa6eD26A7B8d5a13F2B208f813A802D184 \
   1000000
 ```
 
@@ -98,9 +98,9 @@ AMM (constructeur : adresse A, adresse B, frais) :
 ```bash
 npx hardhat verify --network sepolia \
   --contract contracts/AMM.sol:AMSSabartho \
-  0x2C525A01fC50864B110cb23cF600DEAEB9Be826a \
-  0xC736b5BC9C484f275E8B0E3B4e4eb174Ed3D94EB \
-  0xC8e5d9A680d0edee5e42Ef8c10F3A3aBC8CD5C46 \
+  0x5be75E6e0a1ab73F3E02355C1Cd2BB91D0cAc368 \
+  0xDe8AA58Ba90119a11bF5d571Afef6faEdcC98F38 \
+  0xBD06a1aa6eD26A7B8d5a13F2B208f813A802D184 \
   2
 ```
 
@@ -116,7 +116,7 @@ npm install
 `frontend/.env` (déjà aligné sur le déploiement Sepolia) :
 
 ```env
-PUBLIC_AMM_ADDRESS=0x2C525A01fC50864B110cb23cF600DEAEB9Be826a
+PUBLIC_AMM_ADDRESS=0x5be75E6e0a1ab73F3E02355C1Cd2BB91D0cAc368
 ```
 
 Un `.env.example` est fourni. Puis :
@@ -129,9 +129,9 @@ Ouvrir l’URL Vite (souvent `http://localhost:5173`). Connecter MetaMask, rése
 
 Importer les tokens dans MetaMask (custom token) :
 
-- SBTA : `0xC736b5BC9C484f275E8B0E3B4e4eb174Ed3D94EB`
-- SBTB : `0xC8e5d9A680d0edee5e42Ef8c10F3A3aBC8CD5C46`
-- AMMLP : `0x2C525A01fC50864B110cb23cF600DEAEB9Be826a`
+- SBTA : `0xDe8AA58Ba90119a11bF5d571Afef6faEdcC98F38`
+- SBTB : `0xBD06a1aa6eD26A7B8d5a13F2B208f813A802D184`
+- AMMLP : `0x5be75E6e0a1ab73F3E02355C1Cd2BB91D0cAc368`
 
 Le déployeur possède le supply initial. Pour un second wallet de test : transférer des SBTA/SBTB, ou minter (`mint` réservé à l’owner).
 
@@ -167,9 +167,9 @@ Il n’y a pas de suite de tests automatisés (Hardhat/Mocha) dans le repo. Vali
 ### D. Swap
 
 1. Entrer un montant : la sortie vient de `getAmountOut` (pas un calcul local).
-2. Contrôler frais (2 %) et impact prix (vert / ambre / rouge).
+2. Contrôler frais (2 %), impact prix (vert / ambre / rouge) et **slippage max** (0,5 % / 1 % / 3 %). **Min received** = `quoted × (1 − slippage)`.
 3. Inverser la paire (↕), relancer un quote.
-4. Confirmer : `approve` du token d’entrée si l’allowance est insuffisante, puis `swap`.
+4. Confirmer : `approve` du token d’entrée si l’allowance est insuffisante, puis `swap(..., minAmountOut, deadline)` (`deadline` = now + 20 min, affiché **Expires**).
 5. Lien **Etherscan** après confirmation. Les réserves et le prix spot doivent bouger.
 
 
@@ -193,6 +193,8 @@ Prérequis : un ERC-721 Sepolia dont vous êtes owner, et assez de SBTA/SBTB pou
 | Swap montant 0                           | Revert `Amount must be > 0`                      |
 | Token d’entrée invalide                  | Revert `Invalid token`                           |
 | Swap plus grand que la réserve de sortie | Revert `Insufficient liquidity`                  |
+| Sortie sous le min (slippage trop serré) | Revert `slippage too high`                       |
+| Deadline déjà passée                     | Revert `Deadline expired`                        |
 | Retrait LP > solde                       | Revert `Not enough LP tokens`                    |
 | Listing prix 0                           | Revert `Price must be > 0`                       |
 | Listing d’un NFT non possédé             | Revert / erreur DApp « You do not own this NFT » |

@@ -11,9 +11,9 @@ AMM constant-product (SBTA / SBTB) + marketplace NFT à prix fixe, déployé sur
 
 | Contract | Address |
 | --- | --- |
-| Token A — `SabarthoTokenA` (SBTA) | [`0xC736b5BC9C484f275E8B0E3B4e4eb174Ed3D94EB`](https://sepolia.etherscan.io/address/0xC736b5BC9C484f275E8B0E3B4e4eb174Ed3D94EB) |
-| Token B — `SabarthoTokenB` (SBTB) | [`0xC8e5d9A680d0edee5e42Ef8c10F3A3aBC8CD5C46`](https://sepolia.etherscan.io/address/0xC8e5d9A680d0edee5e42Ef8c10F3A3aBC8CD5C46) |
-| AMM — `AMSSabartho` (AMMLP) | [`0x2C525A01fC50864B110cb23cF600DEAEB9Be826a`](https://sepolia.etherscan.io/address/0x2C525A01fC50864B110cb23cF600DEAEB9Be826a) |
+| Token A — `SabarthoTokenA` (SBTA) | [`0xDe8AA58Ba90119a11bF5d571Afef6faEdcC98F38`](https://sepolia.etherscan.io/address/0xDe8AA58Ba90119a11bF5d571Afef6faEdcC98F38) |
+| Token B — `SabarthoTokenB` (SBTB) | [`0xBD06a1aa6eD26A7B8d5a13F2B208f813A802D184`](https://sepolia.etherscan.io/address/0xBD06a1aa6eD26A7B8d5a13F2B208f813A802D184) |
+| AMM — `AMSSabartho` (AMMLP) | [`0x5be75E6e0a1ab73F3E02355C1Cd2BB91D0cAc368`](https://sepolia.etherscan.io/address/0x5be75E6e0a1ab73F3E02355C1Cd2BB91D0cAc368) |
 
 ## Folder
 
@@ -21,6 +21,5 @@ AMM constant-product (SBTA / SBTB) + marketplace NFT à prix fixe, déployé sur
 documentation/
 ├── fr/            Cahier des charges (FR)
 ├── en/            Specification (EN)
-├── diagrams/      Architecture, x·y=k, swap, liquidity, NFT
-└── screenshots/   DApp tabs: Swap, Liquidity, Pool, NFT
+└── screenshots/   DApp: swap.png, liquidity.png, pool.png, nft.png
 ```

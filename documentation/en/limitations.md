@@ -2,21 +2,13 @@
 
 Teaching project on Sepolia, not production infrastructure.
 
-## Non-standard swap fee
+## Residual sandwich (basic MEV only)
 
-`getFeeAmount` returns the **fee slice** (`amount * feePercent / 100`), and `swap` uses that value as the quote input:
+`swap` / `addLiquidity` / `removeLiquidity` take a unix `deadline`. The DApp sends **now + 20 minutes**. After that the tx reverts `Deadline expired`.
 
-```
-amountOut = getFeeAmount(amountIn) * reserveOut / (reserveIn + getFeeAmount(amountIn))
-```
+`minAmountOut` still caps how far a sandwich can push the price (revert `slippage too high`). A bot can still sandwich **just above** that floor. There is no private mempool, commit-reveal, or per-block swap lock. NFT `buyNFT` has neither deadline nor min-out.
 
-With `feePercent = 2`, only **2%** of the input is used to compute the output. The remaining **98%** is still added to the input reserve (LP revenue). A Uniswap v2-style AMM would use `amountIn * (100 - fee) / 100` (98% in the quote).
-
-Result: swaps are far more expensive than a classic “2% fee”. The DApp label `Fee 2%` describes the on-chain parameter, not a Uniswap take-rate.
-
-## No slippage protection
-
-`swap` has neither `minAmountOut` nor `deadline`. Another trade can move the price between quote and inclusion. The user receives whatever the curve yields, possibly much less. UI price impact is informational only.
+Price impact in the UI is informational; the on-chain guards are `minAmountOut` and `deadline`.
 
 ## Unbalanced deposit: no refund
 

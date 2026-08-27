@@ -15,7 +15,7 @@ ERC-20 OpenZeppelin + `Ownable`.
 | Nom | 42 Sabartho Token A | 42 Sabartho Token B |
 | Symbole | SBTA | SBTB |
 | Décimales | 18 | 18 |
-| Adresse Sepolia | `0xC736b5BC9C484f275E8B0E3B4e4eb174Ed3D94EB` | `0xC8e5d9A680d0edee5e42Ef8c10F3A3aBC8CD5C46` |
+| Adresse Sepolia | `0xDe8AA58Ba90119a11bF5d571Afef6faEdcC98F38` | `0xBD06a1aa6eD26A7B8d5a13F2B208f813A802D184` |
 
 **Constructeur** : `initialSupply` en unités humaines (ex. `1_000_000`). Le contrat mint `initialSupply * 10**18` à `msg.sender`, qui devient owner.
 
@@ -25,7 +25,7 @@ Ils n’ont aucune logique AMM. L’AMM les traite comme des `IERC20` via `SafeE
 
 ## 2. `AMSSabartho` — vue d’ensemble
 
-Fichier : `code/contracts/AMM.sol`. Adresse : `0x2C525A01fC50864B110cb23cF600DEAEB9Be826a`.
+Fichier : `code/contracts/AMM.sol`. Adresse : `0x5be75E6e0a1ab73F3E02355C1Cd2BB91D0cAc368`.
 
 Héritages :
 
@@ -58,18 +58,19 @@ flowchart TD
   C --> B2[burn LP · réserves -= · transfer]
 ```
 
-### `addLiquidity(amountA, amountB) → lpMinted`
+### `addLiquidity(amountA, amountB, deadline) → lpMinted`
 
-1. Les deux montants doivent être > 0.
-2. Le contrat tire A et B chez l’appelant (`approve` obligatoire).
-3. **Premier LP** (`totalSupply() == 0`) : `lpMinted = sqrt(amountA * amountB)` (moyenne géométrique, méthode babylonienne). Le ratio A/B **fixe le prix**.
-4. **Dépôts suivants** : on mint le minimum des deux valorisations, pour ne jamais créditer plus que le côté faible :
+1. `deadline >= block.timestamp`, sinon revert `Deadline expired`.
+2. Les deux montants doivent être > 0.
+3. Le contrat tire A et B chez l’appelant (`approve` obligatoire).
+4. **Premier LP** (`totalSupply() == 0`) : `lpMinted = sqrt(amountA * amountB)` (moyenne géométrique, méthode babylonienne). Le ratio A/B **fixe le prix**.
+5. **Dépôts suivants** : on mint le minimum des deux valorisations, pour ne jamais créditer plus que le côté faible :
    - `lpFromA = amountA * totalLP / reserveA`
    - `lpFromB = amountB * totalLP / reserveB`
-5. Les **deux** montants sont ajoutés aux réserves. L’excédent du côté fort reste dans le pool (pas de refund).
-6. `_mint(msg.sender, lpMinted)` · event `LiquidityAdded`.
+6. Les **deux** montants sont ajoutés aux réserves. L’excédent du côté fort reste dans le pool (pas de refund).
+7. `_mint(msg.sender, lpMinted)` · event `LiquidityAdded`.
 
-### `removeLiquidity(lpAmount) → (amountA, amountB)`
+### `removeLiquidity(lpAmount, deadline) → (amountA, amountB)`
 
 Part proportionnelle des deux réserves :
 
@@ -91,22 +92,24 @@ Modèle : **x · y = k**. Prix spot :
 - 1 A en B = `reserveB / reserveA`
 - 1 B en A = `reserveA / reserveB`
 
-### `swap(tokenIn, amountIn) → amountOut`
+### `swap(tokenIn, amountIn, minAmountOut, deadline) → amountOut`
 
-1. `tokenIn` doit être A ou B, `amountIn > 0`.
-2. `safeTransferFrom` de `amountIn` vers le pool.
-3. Quote (identique à `getAmountOut`) :
+1. `deadline >= block.timestamp`, sinon revert `Deadline expired`.
+2. `tokenIn` doit être A ou B, `amountIn > 0`.
+3. `safeTransferFrom` de `amountIn` vers le pool.
+4. Quote (identique à `getAmountOut`) :
 
 ```
 inFee = amountIn * (100 - feePercent) / 100
 amountOut = inFee * reserveOut / (reserveIn + inFee)
 ```
 
-4. `amountOut` doit être > 0 et strictement inférieur à la réserve de sortie.
-5. **Tout** `amountIn` est ajouté à la réserve d’entrée ; `amountOut` est retiré de la réserve de sortie. Les 2 % de frais restent donc dans le pool (revenu LP).
-6. Transfert du token de sortie · event `Swapped`.
+5. `amountOut` doit être > 0 et strictement inférieur à la réserve de sortie.
+6. **Slippage** : `amountOut >= minAmountOut`, sinon revert `slippage too high`. La DApp envoie `quoted * (10000 - slippageBps) / 10000` (défaut 1 %).
+7. **Tout** `amountIn` est ajouté à la réserve d’entrée ; `amountOut` est retiré de la réserve de sortie. Les 2 % de frais restent donc dans le pool (revenu LP).
+8. Transfert du token de sortie · event `Swapped`.
 
-Il n’y a pas de `minAmountOut` ni de deadline : le slippage n’est pas borné on-chain. La DApp affiche un impact prix informatif seulement.
+`minAmountOut` + `deadline` sont les gardes MEV de base : un sandwich ne peut pas t’envoyer sous le plancher, et une tx coincée meurt au bout de 20 min (défaut DApp). Un sandwich qui atterrit *juste au-dessus* de `minAmountOut` reste possible.
 
 ### Vues
 

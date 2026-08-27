@@ -2,21 +2,13 @@
 
 Projet pédagogique sur Sepolia, pas un protocole de production.
 
-## Frais de swap non standards
+## Sandwich résiduel (MEV de base seulement)
 
-`getFeeAmount` renvoie la **tranche de frais** (`amount * feePercent / 100`), et `swap` utilise cette valeur comme entrée effective du quote :
+`swap` / `addLiquidity` / `removeLiquidity` prennent un `deadline` unix. La DApp envoie **now + 20 minutes**. Ensuite la tx revert `Deadline expired`.
 
-```
-amountOut = getFeeAmount(amountIn) * reserveOut / (reserveIn + getFeeAmount(amountIn))
-```
+`minAmountOut` borne encore jusqu’où un sandwich peut pousser le prix (revert `slippage too high`). Un bot peut toujours sandwiccher **juste au-dessus** de ce plancher. Pas de mempool privée, de commit-reveal, ni de verrou « un swap par bloc ». `buyNFT` n’a ni deadline ni min-out.
 
-Avec `feePercent = 2`, seulement **2 %** de l’entrée sert à calculer la sortie. Les **98 %** restants sont quand même ajoutés à la réserve d’entrée (revenu LP). Un AMM type Uniswap v2 utiliserait plutôt `amountIn * (100 - fee) / 100` (soit 98 % pour le quote).
-
-Conséquence : les swaps sont beaucoup plus coûteux qu’un « frais 2 % » classique. La DApp affiche `Fee 2%`, ce qui décrit le paramètre on-chain, pas un take-rate Uniswap.
-
-## Pas de protection de slippage
-
-`swap` n’a ni `minAmountOut` ni `deadline`. Entre le quote et la confirmation, un autre swap peut déplacer le prix. L’utilisateur reçoit ce que la courbe donne au moment de l’inclusion, éventuellement beaucoup moins. L’impact prix dans l’UI est indicatif.
+L’impact prix dans l’UI est indicatif ; les gardes on-chain sont `minAmountOut` et `deadline`.
 
 ## Dépôt déséquilibré : pas de refund
 

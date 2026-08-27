@@ -15,7 +15,7 @@ OpenZeppelin ERC-20 + `Ownable`.
 | Name | 42 Sabartho Token A | 42 Sabartho Token B |
 | Symbol | SBTA | SBTB |
 | Decimals | 18 | 18 |
-| Sepolia address | `0xC736b5BC9C484f275E8B0E3B4e4eb174Ed3D94EB` | `0xC8e5d9A680d0edee5e42Ef8c10F3A3aBC8CD5C46` |
+| Sepolia address | `0xDe8AA58Ba90119a11bF5d571Afef6faEdcC98F38` | `0xBD06a1aa6eD26A7B8d5a13F2B208f813A802D184` |
 
 **Constructor**: `initialSupply` in whole tokens (e.g. `1_000_000`). The contract mints `initialSupply * 10**18` to `msg.sender`, who becomes owner.
 
@@ -25,7 +25,7 @@ They have no AMM logic. The AMM treats them as `IERC20` via `SafeERC20`.
 
 ## 2. `AMSSabartho` — overview
 
-File: `code/contracts/AMM.sol`. Address: `0x2C525A01fC50864B110cb23cF600DEAEB9Be826a`.
+File: `code/contracts/AMM.sol`. Address: `0x5be75E6e0a1ab73F3E02355C1Cd2BB91D0cAc368`.
 
 Inherits:
 
@@ -58,18 +58,19 @@ flowchart TD
   C --> B2[burn LP · reserves -= · transfer]
 ```
 
-### `addLiquidity(amountA, amountB) → lpMinted`
+### `addLiquidity(amountA, amountB, deadline) → lpMinted`
 
-1. Both amounts must be > 0.
-2. The contract pulls A and B from the caller (`approve` required).
-3. **First LP** (`totalSupply() == 0`): `lpMinted = sqrt(amountA * amountB)` (geometric mean, Babylonian `sqrt`). The A/B ratio **sets the price**.
-4. **Later deposits**: mint the weaker of the two valuations so the depositor is never credited above the thin side:
+1. `deadline >= block.timestamp`, otherwise revert `Deadline expired`.
+2. Both amounts must be > 0.
+3. The contract pulls A and B from the caller (`approve` required).
+4. **First LP** (`totalSupply() == 0`): `lpMinted = sqrt(amountA * amountB)` (geometric mean, Babylonian `sqrt`). The A/B ratio **sets the price**.
+5. **Later deposits**: mint the weaker of the two valuations so the depositor is never credited above the thin side:
    - `lpFromA = amountA * totalLP / reserveA`
    - `lpFromB = amountB * totalLP / reserveB`
-5. **Both** amounts are added to reserves. Surplus on the strong side stays in the pool (no refund).
-6. `_mint(msg.sender, lpMinted)` · event `LiquidityAdded`.
+6. **Both** amounts are added to reserves. Surplus on the strong side stays in the pool (no refund).
+7. `_mint(msg.sender, lpMinted)` · event `LiquidityAdded`.
 
-### `removeLiquidity(lpAmount) → (amountA, amountB)`
+### `removeLiquidity(lpAmount, deadline) → (amountA, amountB)`
 
 Pro-rata claim on both reserves:
 
@@ -91,22 +92,24 @@ Model: **x · y = k**. Spot prices:
 - 1 A in B = `reserveB / reserveA`
 - 1 B in A = `reserveA / reserveB`
 
-### `swap(tokenIn, amountIn) → amountOut`
+### `swap(tokenIn, amountIn, minAmountOut, deadline) → amountOut`
 
-1. `tokenIn` must be A or B, `amountIn > 0`.
-2. `safeTransferFrom` of `amountIn` into the pool.
-3. Quote (same as `getAmountOut`):
+1. `deadline >= block.timestamp`, otherwise revert `Deadline expired`.
+2. `tokenIn` must be A or B, `amountIn > 0`.
+3. `safeTransferFrom` of `amountIn` into the pool.
+4. Quote (same as `getAmountOut`):
 
 ```
 inFee = amountIn * (100 - feePercent) / 100
 amountOut = inFee * reserveOut / (reserveIn + inFee)
 ```
 
-4. `amountOut` must be > 0 and strictly less than the output reserve.
-5. The **full** `amountIn` is added to the input reserve; `amountOut` is subtracted from the output reserve. The 2% fee therefore stays in the pool (LP revenue).
-6. Transfer the output token · event `Swapped`.
+5. `amountOut` must be > 0 and strictly less than the output reserve.
+6. **Slippage**: `amountOut >= minAmountOut`, otherwise revert `slippage too high`. The DApp sends `quoted * (10000 - slippageBps) / 10000` (default 1%).
+7. The **full** `amountIn` is added to the input reserve; `amountOut` is subtracted from the output reserve. The 2% fee therefore stays in the pool (LP revenue).
+8. Transfer the output token · event `Swapped`.
 
-There is no `minAmountOut` and no deadline: slippage is not capped on-chain. The DApp only shows an informational price impact.
+Together, `minAmountOut` + `deadline` are the basic MEV guards: a sandwich cannot push you below the floor, and a stuck tx dies after 20 minutes (DApp default). A sandwich that lands *just above* `minAmountOut` is still possible.
 
 ### Views
 
