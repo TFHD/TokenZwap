@@ -45,6 +45,13 @@ export function lpSharePercent(pool: Pool) {
 	return formatAmount((pool.userLP * 10n ** 18n * 100n) / pool.totalLP, 18, 4);
 }
 
+/** Floor of quoted output after a max slippage in basis points (100 bps = 1%). */
+export function minAmountOut(quoted: bigint, slippageBps: number): bigint {
+	if (quoted <= 0n) return 0n;
+	const bps = BigInt(Math.max(0, Math.min(10_000, Math.floor(slippageBps))));
+	return (quoted * (10_000n - bps)) / 10_000n;
+}
+
 export type PriceImpact = {
 	percent: string;
 	bps: bigint;

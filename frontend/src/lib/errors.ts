@@ -8,6 +8,8 @@ type EthersError = {
 const REVERT_MESSAGES: [needle: string, message: string][] = [
 	['Insufficient liquidity', 'Not enough liquidity in the pool.'],
 	['Insufficient output amount', 'Output amount is too small.'],
+	['slippage too high', 'Price moved past your max slippage. Try again or increase slippage.'],
+	['Deadline expired', 'Transaction expired. Confirm again to get a fresh deadline.'],
 	['Not enough LP tokens', 'Not enough LP tokens.'],
 	['Listing not active', 'This listing is no longer active.'],
 	['Cannot buy your own NFT', 'You cannot buy your own NFT.'],

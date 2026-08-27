@@ -18,6 +18,7 @@
 		LP_DECIMALS,
 		listNFT,
 		loadPriceHistory,
+		minAmountOut,
 		pool,
 		quoteOut,
 		removeLiquidity,
@@ -35,6 +36,7 @@
 		swap,
 		switchToSepolia,
 		tokenMeta,
+		TX_DEADLINE_SECS,
 		wallet,
 		withdrawPreview
 	} from '$lib';
@@ -46,6 +48,13 @@
 	let amountIn = $state('');
 	let amountOutPreview = $state('');
 	let amountOutRaw = $state(0n);
+	let slippageBps = $state(100);
+
+	const slippagePresets: { bps: number; label: string }[] = [
+		{ bps: 50, label: '0.5%' },
+		{ bps: 100, label: '1%' },
+		{ bps: 300, label: '3%' }
+	];
 
 	let liqMode = $state<'add' | 'remove'>('add');
 	let amountA = $state('');
@@ -71,6 +80,7 @@
 	const lastPrice = $derived(pairAFirst ? priceAinB : priceBinA);
 	const inversePrice = $derived(pairAFirst ? priceBinA : priceAinB);
 	const yourShare = $derived(lpSharePercent(pool));
+	const minReceived = $derived(minAmountOut(amountOutRaw, slippageBps));
 	const impact = $derived.by(() => {
 		const parsedIn = tryParseAmount(amountIn, tokenIn.decimals);
 		if (!parsedIn) return null;
@@ -125,7 +135,7 @@
 
 	function onSwap(event: SubmitEvent) {
 		event.preventDefault();
-		void swap(tokenInIsA, amountIn);
+		void swap(tokenInIsA, amountIn, minReceived);
 	}
 
 	function onAdd(event: SubmitEvent) {
@@ -291,12 +301,42 @@
 										<span class="text-safe-mute font-mono">—</span>
 									{/if}
 								</div>
+								<div class="mt-3 flex items-center justify-between gap-3">
+									<span class="text-safe-mute">Max slippage</span>
+									<div class="flex gap-1">
+										{#each slippagePresets as preset (preset.bps)}
+											<button
+												type="button"
+												class="cursor-pointer rounded-full px-2.5 py-1 text-xs font-semibold {subClass(
+													slippageBps === preset.bps
+												)}"
+												onclick={() => (slippageBps = preset.bps)}
+											>
+												{preset.label}
+											</button>
+										{/each}
+									</div>
+								</div>
+								<div class="mt-1.5 flex items-center justify-between">
+									<span class="text-safe-mute">Min received</span>
+									{#if amountOutRaw > 0n}
+										<span class="font-mono"
+											>{formatAmount(minReceived, tokenOut.decimals)} {tokenOut.symbol}</span
+										>
+									{:else}
+										<span class="text-safe-mute font-mono">—</span>
+									{/if}
+								</div>
+								<div class="mt-1.5 flex items-center justify-between">
+									<span class="text-safe-mute">Expires</span>
+									<span class="font-mono">{TX_DEADLINE_SECS / 60} min</span>
+								</div>
 								{#if impact?.level === 'high'}
 									<p class="mt-2 text-xs text-red-300">High impact — this trade moves the pool price a lot.</p>
 								{/if}
 							</div>
 
-							<button type="submit" class="btn-primary" disabled={!ready || !amountIn}>
+							<button type="submit" class="btn-primary" disabled={!ready || !amountIn || minReceived <= 0n}>
 								{wallet.busy ? 'Transaction…' : `Swap ${tokenIn.symbol} → ${tokenOut.symbol}`}
 							</button>
 						</form>

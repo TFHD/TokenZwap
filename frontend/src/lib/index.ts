@@ -1,8 +1,9 @@
 export { LP_DECIMALS } from './types';
-export { AMM_ADDRESS, explorerTx, isConfigured } from './chain';
+export { AMM_ADDRESS, explorerTx, isConfigured, TX_DEADLINE_SECS } from './chain';
 export { formatAmount, sameAddress, shortenAddress, tryParseAmount } from './format';
 export {
 	lpSharePercent,
+	minAmountOut,
 	priceImpact,
 	spotPriceAPerB,
 	spotPriceBPerA,
