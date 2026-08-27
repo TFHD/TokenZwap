@@ -98,15 +98,13 @@ Model: **x · y = k**. Spot prices:
 3. Quote (same as `getAmountOut`):
 
 ```
-inFee = getFeeAmount(amountIn) = amountIn * feePercent / 100
+inFee = amountIn * (100 - feePercent) / 100
 amountOut = inFee * reserveOut / (reserveIn + inFee)
 ```
 
 4. `amountOut` must be > 0 and strictly less than the output reserve.
-5. The **full** `amountIn` is added to the input reserve; `amountOut` is subtracted from the output reserve.
+5. The **full** `amountIn` is added to the input reserve; `amountOut` is subtracted from the output reserve. The 2% fee therefore stays in the pool (LP revenue).
 6. Transfer the output token · event `Swapped`.
-
-With `feePercent = 2`, `getFeeAmount` returns **2%** of the input. That slice — not 98% — is what the quote uses. The remaining 98% still enters the input reserve (LP revenue). This is **not** a classic Uniswap-style 2% fee. See [Known limitations](limitations.md).
 
 There is no `minAmountOut` and no deadline: slippage is not capped on-chain. The DApp only shows an informational price impact.
 

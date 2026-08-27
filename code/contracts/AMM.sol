@@ -360,8 +360,8 @@ contract AMSSabartho is ERC20, IERC721Receiver, ReentrancyGuard, Ownable {
         }
     }
 
-    /// @notice Fee charged on `amount`: feePercent% of the value.
+    /// @notice Amount kept for the swap after the fee: amount * (1 - feePercent/100).
     function getFeeAmount(uint256 amount) internal view returns (uint256) {
-        return (amount * feePercent) / 100;
+        return (amount * (100 - feePercent)) / 100;
     }
 }

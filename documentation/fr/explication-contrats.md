@@ -98,15 +98,13 @@ Modèle : **x · y = k**. Prix spot :
 3. Quote (identique à `getAmountOut`) :
 
 ```
-inFee = getFeeAmount(amountIn) = amountIn * feePercent / 100
+inFee = amountIn * (100 - feePercent) / 100
 amountOut = inFee * reserveOut / (reserveIn + inFee)
 ```
 
 4. `amountOut` doit être > 0 et strictement inférieur à la réserve de sortie.
-5. **Tout** `amountIn` est ajouté à la réserve d’entrée ; `amountOut` est retiré de la réserve de sortie.
+5. **Tout** `amountIn` est ajouté à la réserve d’entrée ; `amountOut` est retiré de la réserve de sortie. Les 2 % de frais restent donc dans le pool (revenu LP).
 6. Transfert du token de sortie · event `Swapped`.
-
-Avec `feePercent = 2`, `getFeeAmount` renvoie **2 %** de l’entrée. C’est ce montant — et non 98 % — qui sert au calcul de sortie. Le reste (98 %) reste dans le pool au bénéfice des LP. Ce n’est **pas** un frais Uniswap classique de 2 %. Détail dans [Limites connues](limites.md).
 
 Il n’y a pas de `minAmountOut` ni de deadline : le slippage n’est pas borné on-chain. La DApp affiche un impact prix informatif seulement.
 
