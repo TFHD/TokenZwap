@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
 	import { isAddress } from 'ethers';
 	import NftMedia from '$lib/components/NftMedia.svelte';
 	import PriceChart from '$lib/components/PriceChart.svelte';
@@ -56,6 +56,7 @@
 	let tokenId = $state('');
 	let paymentIsA = $state(true);
 	let nftPrice = $state('');
+	let pairAFirst = $state(true);
 
 	const ready = $derived(isConnected() && isSepolia() && isConfigured() && !wallet.busy);
 	const tokenIn = $derived(tokenMeta(pool, tokenInIsA));
@@ -65,6 +66,10 @@
 	const activeListings = $derived(pool.listings.filter((listing) => listing.active));
 	const priceAinB = $derived(spotPriceBPerA(pool));
 	const priceBinA = $derived(spotPriceAPerB(pool));
+	const pairBase = $derived(pairAFirst ? pool.symbolA : pool.symbolB);
+	const pairQuote = $derived(pairAFirst ? pool.symbolB : pool.symbolA);
+	const lastPrice = $derived(pairAFirst ? priceAinB : priceBinA);
+	const inversePrice = $derived(pairAFirst ? priceBinA : priceAinB);
 	const yourShare = $derived(lpSharePercent(pool));
 	const impact = $derived.by(() => {
 		const parsedIn = tryParseAmount(amountIn, tokenIn.decimals);
@@ -84,8 +89,8 @@
 		{ id: 'nft', label: 'NFT' }
 	];
 
-	$effect(() => {
-		if (!browser || !isConfigured()) return;
+	onMount(() => {
+		if (!isConfigured()) return;
 		void refreshPool().then(() => loadPriceHistory());
 		startPriceListener();
 		return () => stopPriceListener();
@@ -106,6 +111,10 @@
 			}
 		});
 	});
+
+	function flipPair() {
+		pairAFirst = !pairAFirst;
+	}
 
 	function flipTokens() {
 		tokenInIsA = !tokenInIsA;
@@ -184,7 +193,12 @@
 		{:else}
 			<section class="panel overflow-hidden p-5 md:p-6">
 				<div class="h-[300px] md:h-[340px]">
-					<PriceChart symbolA={pool.symbolA} symbolB={pool.symbolB} />
+					<PriceChart
+						symbolA={pool.symbolA}
+						symbolB={pool.symbolB}
+						inverted={!pairAFirst}
+						ontoggle={flipPair}
+					/>
 				</div>
 			</section>
 
@@ -234,12 +248,12 @@
 					{:else if tab === 'swap'}
 						<form class="mx-auto max-w-xl space-y-4" onsubmit={onSwap}>
 							<div class="stat">
-								<label class="text-safe-mute flex items-center justify-between text-sm">
+								<label for="amount-in" class="text-safe-mute flex items-center justify-between text-sm">
 									<span>You pay</span>
 									<span class="text-xs">Balance {formatAmount(tokenIn.balance, tokenIn.decimals)} {tokenIn.symbol}</span>
 								</label>
 								<div class="mt-2 flex items-center gap-3">
-									<input class="field-input mt-0 flex-1 border-0 bg-transparent px-0 text-2xl" bind:value={amountIn} placeholder="0.0" inputmode="decimal" />
+									<input id="amount-in" class="field-input mt-0 flex-1 border-0 bg-transparent px-0 text-2xl" bind:value={amountIn} placeholder="0.0" inputmode="decimal" />
 									<span class="bg-safe-card text-safe-text rounded-full px-3 py-1 text-sm font-semibold">{tokenIn.symbol}</span>
 								</div>
 							</div>
@@ -249,9 +263,9 @@
 							</button>
 
 							<div class="stat">
-								<label class="text-safe-mute text-sm">You receive</label>
+								<label for="amount-out" class="text-safe-mute text-sm">You receive</label>
 								<div class="mt-2 flex items-center gap-3">
-									<input class="field-input mt-0 flex-1 border-0 bg-transparent px-0 text-2xl" value={amountOutPreview} placeholder="0.0" readonly />
+									<input id="amount-out" class="field-input mt-0 flex-1 border-0 bg-transparent px-0 text-2xl" value={amountOutPreview} placeholder="0.0" readonly />
 									<span class="bg-safe-card text-safe-text rounded-full px-3 py-1 text-sm font-semibold">{tokenOut.symbol}</span>
 								</div>
 							</div>
@@ -296,18 +310,18 @@
 							<form class="space-y-5" onsubmit={onAdd}>
 								<div class="grid gap-4 md:grid-cols-2">
 									<div class="stat">
-										<label class="text-safe-mute flex items-center justify-between text-sm">
+										<label for="amount-a" class="text-safe-mute flex items-center justify-between text-sm">
 											<span>{pool.symbolA}</span>
 											<span class="text-xs">Balance {formatAmount(pool.userA, pool.decimalsA)}</span>
 										</label>
-										<input class="field-input border-0 bg-transparent px-0 text-2xl" bind:value={amountA} placeholder="0.0" inputmode="decimal" />
+										<input id="amount-a" class="field-input border-0 bg-transparent px-0 text-2xl" bind:value={amountA} placeholder="0.0" inputmode="decimal" />
 									</div>
 									<div class="stat">
-										<label class="text-safe-mute flex items-center justify-between text-sm">
+										<label for="amount-b" class="text-safe-mute flex items-center justify-between text-sm">
 											<span>{pool.symbolB}</span>
 											<span class="text-xs">Balance {formatAmount(pool.userB, pool.decimalsB)}</span>
 										</label>
-										<input class="field-input border-0 bg-transparent px-0 text-2xl" bind:value={amountB} placeholder="0.0" inputmode="decimal" />
+										<input id="amount-b" class="field-input border-0 bg-transparent px-0 text-2xl" bind:value={amountB} placeholder="0.0" inputmode="decimal" />
 									</div>
 								</div>
 								<p class="text-safe-mute text-sm leading-relaxed">
@@ -324,11 +338,11 @@
 						{:else}
 							<form class="mx-auto max-w-xl space-y-5" onsubmit={onRemove}>
 								<div class="stat">
-									<label class="text-safe-mute flex items-center justify-between text-sm">
+									<label for="lp-amount" class="text-safe-mute flex items-center justify-between text-sm">
 										<span>LP tokens</span>
 										<span class="text-xs">Balance {formatAmount(pool.userLP, LP_DECIMALS)}</span>
 									</label>
-									<input class="field-input border-0 bg-transparent px-0 text-2xl" bind:value={lpAmount} placeholder="0.0" inputmode="decimal" />
+									<input id="lp-amount" class="field-input border-0 bg-transparent px-0 text-2xl" bind:value={lpAmount} placeholder="0.0" inputmode="decimal" />
 								</div>
 								{#if removePreview}
 									<p class="text-safe-mute text-sm">
@@ -346,30 +360,46 @@
 							<div class="flex items-end justify-between gap-6">
 								<div>
 									<p class="text-safe-mute text-xs tracking-[0.2em] uppercase">Pair</p>
-									<p class="mt-2 text-2xl font-semibold tracking-tight">{pool.symbolA}<span class="text-safe-mute"> / </span>{pool.symbolB}</p>
+									<button
+										type="button"
+										class="mt-2 flex cursor-pointer items-center gap-2 text-2xl font-semibold tracking-tight"
+										onclick={flipPair}
+										title="Flip pair"
+									>
+										{pairBase}<span class="text-safe-mute"> / </span>{pairQuote}
+										<span class="btn-ghost px-2 py-1 text-xs">⇄</span>
+									</button>
 								</div>
 								<div class="text-right">
 									<p class="text-safe-mute text-xs tracking-[0.2em] uppercase">Last</p>
-									<p class="text-safe-green mt-2 font-mono text-3xl font-semibold">{priceAinB}</p>
-									<p class="text-safe-mute mt-1 text-sm">{pool.symbolB} per {pool.symbolA}</p>
+									<p class="text-safe-green mt-2 font-mono text-3xl font-semibold">{lastPrice}</p>
+									<p class="text-safe-mute mt-1 text-sm">{pairQuote} per {pairBase}</p>
 								</div>
 							</div>
 
 							<div class="border-safe-line mt-8 grid grid-cols-2 border-y py-5">
 								<div class="pr-6">
-									<p class="text-safe-mute text-xs uppercase tracking-wider">{pool.symbolA}</p>
-									<p class="mt-2 font-mono text-xl">{formatAmount(pool.reserveA, pool.decimalsA)}</p>
+									<p class="text-safe-mute text-xs uppercase tracking-wider">{pairBase}</p>
+									<p class="mt-2 font-mono text-xl">
+										{pairAFirst
+											? formatAmount(pool.reserveA, pool.decimalsA)
+											: formatAmount(pool.reserveB, pool.decimalsB)}
+									</p>
 								</div>
 								<div class="border-safe-line border-l pl-6 text-right">
-									<p class="text-safe-mute text-xs uppercase tracking-wider">{pool.symbolB}</p>
-									<p class="mt-2 font-mono text-xl">{formatAmount(pool.reserveB, pool.decimalsB)}</p>
+									<p class="text-safe-mute text-xs uppercase tracking-wider">{pairQuote}</p>
+									<p class="mt-2 font-mono text-xl">
+										{pairAFirst
+											? formatAmount(pool.reserveB, pool.decimalsB)
+											: formatAmount(pool.reserveA, pool.decimalsA)}
+									</p>
 								</div>
 							</div>
 
 							<dl class="divide-safe-line divide-y text-sm">
 								<div class="flex items-center justify-between py-3.5">
 									<dt class="text-safe-mute">Inverse</dt>
-									<dd class="font-mono">{priceBinA} {pool.symbolA}</dd>
+									<dd class="font-mono">{inversePrice} {pairBase}</dd>
 								</div>
 								<div class="flex items-center justify-between py-3.5">
 									<dt class="text-safe-mute">Fee</dt>

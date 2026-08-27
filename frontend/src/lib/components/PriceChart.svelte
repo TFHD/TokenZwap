@@ -4,10 +4,14 @@
 
 	let {
 		symbolA = 'A',
-		symbolB = 'B'
+		symbolB = 'B',
+		inverted = false,
+		ontoggle
 	}: {
 		symbolA?: string;
 		symbolB?: string;
+		inverted?: boolean;
+		ontoggle?: () => void;
 	} = $props();
 
 	let width = $state(640);
@@ -17,7 +21,16 @@
 
 	const pad = { top: 24, right: 64, bottom: 36, left: 12 };
 
-	const points = $derived(priceHistory.points);
+	const baseSymbol = $derived(inverted ? symbolB : symbolA);
+	const quoteSymbol = $derived(inverted ? symbolA : symbolB);
+	const points = $derived(
+		inverted
+			? priceHistory.points.map((p) => ({
+					...p,
+					price: p.price > 0 ? 1 / p.price : 0
+				}))
+			: priceHistory.points
+	);
 	const last = $derived(points[points.length - 1] ?? null);
 	const first = $derived(points[0] ?? null);
 	const change = $derived.by(() => {
@@ -110,13 +123,24 @@
 <div class="flex h-full min-h-[280px] flex-col" bind:this={chartEl}>
 	<div class="mb-3 flex flex-wrap items-end justify-between gap-3">
 		<div>
-			<p class="text-safe-mute text-xs tracking-[0.2em] uppercase">Spot · {symbolA}/{symbolB}</p>
+			<div class="flex items-center gap-2">
+				<p class="text-safe-mute text-xs tracking-[0.2em] uppercase">Spot</p>
+				<button
+					type="button"
+					class="btn-ghost px-2.5 py-1 text-xs"
+					onclick={() => ontoggle?.()}
+					title="Flip pair"
+				>
+					{baseSymbol} / {quoteSymbol}
+					<span class="ml-1" aria-hidden="true">⇄</span>
+				</button>
+			</div>
 			<p class="mt-1 font-mono text-2xl font-semibold tracking-tight">
 				{active ? formatChartPrice(active.price) : '—'}
-				<span class="text-safe-mute text-sm font-medium">{symbolB}</span>
+				<span class="text-safe-mute text-sm font-medium">{quoteSymbol}</span>
 			</p>
 			{#if active}
-				<p class="text-safe-mute mt-1 text-xs">{labelTime(active)}</p>
+				<p class="text-safe-mute mt-1 text-xs">1 {baseSymbol} · {labelTime(active)}</p>
 			{/if}
 		</div>
 		<div class="text-right">

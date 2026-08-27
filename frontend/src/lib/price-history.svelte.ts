@@ -24,6 +24,7 @@ export const priceHistory = $state<{
 
 let listenerContract: Contract | null = null;
 let lastNotifiedPrice: number | null = null;
+let attached = false;
 
 function humanPrice(reserveA: bigint, reserveB: bigint, priceAinB: bigint): number {
 	const decimalsA = pool.decimalsA || 18;
@@ -132,10 +133,11 @@ export async function loadPriceHistory() {
 }
 
 export function startPriceListener() {
-	if (!isConfigured() || priceHistory.listening) return;
+	if (!isConfigured() || attached) return;
 
 	const provider = readProvider();
 	listenerContract = new Contract(AMM_ADDRESS, AMM_ABI, provider);
+	attached = true;
 	priceHistory.listening = true;
 
 	void listenerContract.on('PriceUpdated', (...args: unknown[]) => {
@@ -170,6 +172,7 @@ export function stopPriceListener() {
 		void listenerContract.removeAllListeners('PriceUpdated');
 		listenerContract = null;
 	}
+	attached = false;
 	priceHistory.listening = false;
 }
 
