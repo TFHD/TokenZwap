@@ -93,11 +93,14 @@ contract AMSSabartho is ERC20, IERC721Receiver, ReentrancyGuard, Ownable {
      *
      *   lpFromA = amountA * totalLP / reserveA
      *   lpFromB = amountB * totalLP / reserveB
+     *
+     * `deadline` is a unix timestamp; the tx reverts with "Deadline expired" after that.
      */
     function addLiquidity(
         uint256 amountA,
-        uint256 amountB
-    ) external nonReentrant returns (uint256 lpMinted) {
+        uint256 amountB,
+        uint256 deadline
+    ) external nonReentrant _ensureDeadline(deadline) returns (uint256 lpMinted) {
         require(amountA > 0 && amountB > 0, "Amounts must be > 0");
 
         // Pull tokens from the caller into this contract (the pool).
@@ -131,8 +134,12 @@ contract AMSSabartho is ERC20, IERC721Receiver, ReentrancyGuard, Ownable {
     /**
      * @notice Burn LP shares and withdraw the matching fraction of both reserves.
      * @dev amountA/B = lpAmount / totalLP * reserve. Price is unchanged; k decreases.
+     * Reverts after `deadline` so a stuck burn cannot execute at a later reserve mix.
      */
-    function removeLiquidity(uint256 lpAmount) external nonReentrant returns (uint256 amountA, uint256 amountB) {
+    function removeLiquidity(
+        uint256 lpAmount,
+        uint256 deadline
+    ) external nonReentrant _ensureDeadline(deadline) returns (uint256 amountA, uint256 amountB) {
         require(lpAmount > 0, "LP amount must be > 0");
         require(balanceOf(msg.sender) >= lpAmount, "Not enough LP tokens");
 
@@ -168,11 +175,16 @@ contract AMSSabartho is ERC20, IERC721Receiver, ReentrancyGuard, Ownable {
      *
      * Full `amountIn` is added to the input reserve (fee stays in the pool for LPs).
      * If a later require fails, the whole tx reverts and the pull is undone.
+     *
+     * `minAmountOut` caps sandwich / slippage. `deadline` drops a stuck tx so it
+     * cannot be included much later at a stale quote.
      */
     function swap(
         address tokenIn,
-        uint256 amountIn
-    ) external nonReentrant returns (uint256 amountOut) {
+        uint256 amountIn,
+        uint256 minAmountOut,
+        uint256 deadline
+    ) external nonReentrant _ensureDeadline(deadline) returns (uint256 amountOut) {
         require(amountIn > 0, "Amount must be > 0");
         require(
             tokenIn == address(tokenA) || tokenIn == address(tokenB),
@@ -201,6 +213,7 @@ contract AMSSabartho is ERC20, IERC721Receiver, ReentrancyGuard, Ownable {
         }
 
         require(amountOut > 0, "Insufficient output amount");
+        require(amountOut >= minAmountOut, "slippage too high");
 
         tokenOut.safeTransfer(msg.sender, amountOut);
 
@@ -346,6 +359,12 @@ contract AMSSabartho is ERC20, IERC721Receiver, ReentrancyGuard, Ownable {
     //                    INTERNAL HELPERS
     // ============================================================
 
+    /// @notice Reject txs included after `deadline` (unix seconds).
+    modifier _ensureDeadline(uint256 deadline) {
+        require(deadline >= block.timestamp, "Deadline expired");
+        _;
+    }
+
     /// @notice Integer square root (Babylonian method), used for the first LP mint.
     function sqrt(uint256 y) internal pure returns (uint256 z) {
         if (y > 3) {
@@ -360,7 +379,7 @@ contract AMSSabartho is ERC20, IERC721Receiver, ReentrancyGuard, Ownable {
         }
     }
 
-    /// @notice Amount kept for the swap after the fee: amount * (1 - feePercent/100).
+    /// @notice Amount kept for the swap after the fee
     function getFeeAmount(uint256 amount) internal view returns (uint256) {
         return (amount * (100 - feePercent)) / 100;
     }
